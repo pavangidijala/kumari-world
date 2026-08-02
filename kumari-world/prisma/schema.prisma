@@ -77,9 +77,10 @@ model User {
 // ---------- QUESTIONS ----------
 
 model Subject {
-  id     String   @id @default(uuid())
-  name   String   @unique // Quant, Reasoning, English, GA, Banking Awareness, Computer
-  topics Topic[]
+  id        String     @id @default(uuid())
+  name      String     @unique // Quant, Reasoning, English, GA, Banking Awareness, Computer
+  topics    Topic[]
+  questions Question[]
 
   @@map("subjects")
 }
