@@ -1,47 +1,36 @@
-'use client';
-import { useEffect, useState } from 'react';
+import { NextResponse } from 'next/server';
+import { supabase } from '@/lib/supabaseClient';
 
-export default function MockTests() {
-  const [questions, setQuestions] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
+export async function POST(req: Request) {
+  const { prompt } = await req.json();
 
-  useEffect(() => {
-    const loadQuestions = async () => {
-      setLoading(true);
-      const res = await fetch('/api/gemini', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          prompt: `Generate 20 multiple-choice questions for bank exams (Reasoning, Quant, English, GK).`
-        })
-      });
-      const data = await res.json();
-      setQuestions(data.questions);
-      setLoading(false);
-    };
+  // Call Gemini API
+  const response = await fetch("https://gemini.googleapis.com/v1/generate", {
+    method: "POST",
+    headers: {
+      "Authorization": `Bearer ${process.env.GEMINI_API_KEY}`,
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({ prompt })
+  });
 
-    loadQuestions();
-  }, []);
+  const data = await response.json();
+  const questions = data.questions || [];
 
-  if (loading) return <p>Loading questions...</p>;
+  // Save each question to Supabase
+  for (const q of questions) {
+    await supabase.from('questions').insert({
+      question: q.question,
+      options: q.options,
+      answer: q.answer,
+      explanation: q.explanation,
+      subject: q.subject,
+      topic: q.topic,
+      difficulty: q.difficulty,
+      exam: q.exam
+    });
+  }
 
-  return (
-    <div className="p-6">
-      <h1 className="text-2xl font-bold mb-4">Mock Test</h1>
-      {questions.map((q, idx) => (
-        <div key={idx} className="mb-6">
-          <p className="font-semibold">{q.question}</p>
-          <ul className="list-disc ml-6">
-            {q.options.map((opt: string, i: number) => (
-              <li key={i}>{opt}</li>
-            ))}
-          </ul>
-          <p className="text-sm text-gray-600 mt-2">
-            Correct Answer: {q.options[q.answer]}
-          </p>
-          <p className="text-xs text-gray-500">{q.explanation}</p>
-        </div>
-      ))}
-    </div>
-  );
+  // ✅ Important: Always return a response
+  return NextResponse.json({ questions });
 }
