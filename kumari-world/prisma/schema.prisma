@@ -1,0 +1,369 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+// ---------- ENUMS ----------
+
+enum ExamCategory {
+  SBI_PO
+  SBI_CLERK
+  IBPS_PO
+  IBPS_CLERK
+  IBPS_RRB
+  RBI
+  LIC
+  NABARD
+  INSURANCE
+}
+
+enum QuestionDifficulty {
+  EASY
+  MEDIUM
+  HARD
+}
+
+enum TestType {
+  FULL_MOCK
+  TOPIC_WISE
+  PREVIOUS_YEAR
+  DAILY_QUIZ
+}
+
+enum AttemptStatus {
+  IN_PROGRESS
+  SUBMITTED
+  AUTO_SUBMITTED
+}
+
+enum QuestionStatus {
+  NOT_VISITED
+  NOT_ANSWERED
+  ANSWERED
+  MARKED_FOR_REVIEW
+  ANSWERED_MARKED_FOR_REVIEW
+}
+
+// ---------- USERS ----------
+
+model User {
+  id          String   @id @default(uuid()) // maps to Supabase auth.users.id
+  email       String   @unique
+  fullName    String?
+  avatarUrl   String?
+  targetExam  ExamCategory?
+  examDate    DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  results        Result[]
+  attempts       TestAttempt[]
+  bookmarks      Bookmark[]
+  mistakes       MistakeBookEntry[]
+  streak         Streak?
+  studySessions  StudySession[]
+  achievements   UserAchievement[]
+  plannerTasks   PlannerTask[]
+  doubts         AiDoubt[]
+
+  @@map("users")
+}
+
+// ---------- QUESTIONS ----------
+
+model Subject {
+  id     String   @id @default(uuid())
+  name   String   @unique // Quant, Reasoning, English, GA, Banking Awareness, Computer
+  topics Topic[]
+
+  @@map("subjects")
+}
+
+model Topic {
+  id        String   @id @default(uuid())
+  name      String
+  subjectId String
+  subject   Subject  @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+  questions Question[]
+
+  @@unique([subjectId, name])
+  @@map("topics")
+}
+
+model Question {
+  id            String              @id @default(uuid())
+  examCategory  ExamCategory
+  subjectId     String
+  subject       Subject             @relation(fields: [subjectId], references: [id])
+  topicId       String?
+  topic         Topic?              @relation(fields: [topicId], references: [id])
+  difficulty    QuestionDifficulty  @default(MEDIUM)
+  questionText  String
+  options       Json                // [{ key: "A", text: "..." }, ...]
+  correctOption String
+  explanation   String?
+  aiExplanation String?             // AI-generated explanation cache
+  year          Int?                // for previous year papers
+  imageUrl      String?
+  createdAt     DateTime            @default(now())
+
+  testQuestions TestQuestion[]
+  bookmarks     Bookmark[]
+  mistakes      MistakeBookEntry[]
+  answers       Answer[]
+
+  @@index([examCategory, subjectId])
+  @@map("questions")
+}
+
+// ---------- TESTS ----------
+
+model Test {
+  id            String       @id @default(uuid())
+  title         String
+  type          TestType
+  examCategory  ExamCategory
+  durationMins  Int
+  totalMarks    Int
+  negativeMark  Float        @default(0.25)
+  sections      Json         // [{ name: "Quant", questionCount: 35, durationMins: 20 }]
+  isActive      Boolean      @default(true)
+  scheduledFor  DateTime?    // for daily quiz auto-publish
+  createdAt     DateTime     @default(now())
+
+  questions TestQuestion[]
+  attempts  TestAttempt[]
+  results   Result[]
+
+  @@index([type, examCategory])
+  @@map("tests")
+}
+
+model TestQuestion {
+  id         String   @id @default(uuid())
+  testId     String
+  test       Test     @relation(fields: [testId], references: [id], onDelete: Cascade)
+  questionId String
+  question   Question @relation(fields: [questionId], references: [id])
+  order      Int
+  section    String
+
+  @@unique([testId, questionId])
+  @@map("test_questions")
+}
+
+// ---------- ATTEMPTS / RESULTS ----------
+
+model TestAttempt {
+  id           String        @id @default(uuid())
+  userId       String
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  testId       String
+  test         Test          @relation(fields: [testId], references: [id])
+  status       AttemptStatus @default(IN_PROGRESS)
+  startedAt    DateTime      @default(now())
+  submittedAt  DateTime?
+  timeLeftSecs Int?          // for autosave/resume ("Continue Last Mock")
+  currentIndex Int           @default(0)
+
+  answers Answer[]
+  result  Result?
+
+  @@index([userId, status])
+  @@map("test_attempts")
+}
+
+model Answer {
+  id             String         @id @default(uuid())
+  attemptId      String
+  attempt        TestAttempt    @relation(fields: [attemptId], references: [id], onDelete: Cascade)
+  questionId     String
+  question       Question       @relation(fields: [questionId], references: [id])
+  selectedOption String?
+  status         QuestionStatus @default(NOT_VISITED)
+  timeTakenSecs  Int            @default(0)
+  updatedAt      DateTime       @updatedAt
+
+  @@unique([attemptId, questionId])
+  @@map("answers")
+}
+
+model Result {
+  id              String      @id @default(uuid())
+  attemptId       String      @unique
+  attempt         TestAttempt @relation(fields: [attemptId], references: [id], onDelete: Cascade)
+  userId          String
+  user            User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  testId          String
+  test            Test        @relation(fields: [testId], references: [id])
+  score           Float
+  totalMarks      Float
+  correctCount    Int
+  wrongCount      Int
+  skippedCount    Int
+  accuracy        Float
+  rank            Int?
+  percentile      Float?
+  sectionAnalysis Json        // [{ section, correct, wrong, skipped, score, accuracyPct, avgTimeSec }]
+  aiAnalysis      String?     // AI-generated mock analysis summary
+  createdAt       DateTime    @default(now())
+
+  @@index([userId, createdAt])
+  @@map("results")
+}
+
+// ---------- DAILY QUIZ / CURRENT AFFAIRS ----------
+
+model DailyQuiz {
+  id        String   @id @default(uuid())
+  date      DateTime @unique @db.Date
+  testId    String
+  title     String
+  createdAt DateTime @default(now())
+
+  @@map("daily_quizzes")
+}
+
+model CurrentAffair {
+  id          String   @id @default(uuid())
+  title       String
+  summary     String
+  category    String   // Banking, Economy, National, International, Sports, Awards
+  sourceUrl   String?
+  publishedAt DateTime
+  createdAt   DateTime @default(now())
+
+  @@index([publishedAt])
+  @@map("current_affairs")
+}
+
+// ---------- NOTES ----------
+
+model Note {
+  id           String       @id @default(uuid())
+  title        String
+  examCategory ExamCategory
+  subjectName  String
+  fileUrl      String       // Supabase Storage path
+  fileSizeKb   Int?
+  createdAt    DateTime     @default(now())
+
+  @@map("notes")
+}
+
+// ---------- BOOKMARKS / MISTAKE BOOK ----------
+
+model Bookmark {
+  id         String   @id @default(uuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  questionId String
+  question   Question @relation(fields: [questionId], references: [id])
+  note       String?
+  createdAt  DateTime @default(now())
+
+  @@unique([userId, questionId])
+  @@map("bookmarks")
+}
+
+model MistakeBookEntry {
+  id            String   @id @default(uuid())
+  userId        String
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  questionId    String
+  question      Question @relation(fields: [questionId], references: [id])
+  timesWrong    Int      @default(1)
+  lastWrongAt   DateTime @default(now())
+  mastered      Boolean  @default(false)
+
+  @@unique([userId, questionId])
+  @@map("mistake_book_entries")
+}
+
+// ---------- STREAKS / STUDY SESSIONS ----------
+
+model Streak {
+  id             String   @id @default(uuid())
+  userId         String   @unique
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  currentStreak  Int      @default(0)
+  longestStreak  Int      @default(0)
+  lastActiveDate DateTime @db.Date
+
+  @@map("streaks")
+}
+
+model StudySession {
+  id            String   @id @default(uuid())
+  userId        String
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  activityType  String   // mock_test, topic_test, notes, quiz, doubt_solver
+  durationSecs  Int
+  date          DateTime @db.Date
+  createdAt     DateTime @default(now())
+
+  @@index([userId, date])
+  @@map("study_sessions")
+}
+
+// ---------- ACHIEVEMENTS ----------
+
+model Achievement {
+  id          String @id @default(uuid())
+  code        String @unique // e.g. "STREAK_7", "FIRST_MOCK", "TOP_10_PERCENTILE"
+  title       String
+  description String
+  iconUrl     String?
+
+  users UserAchievement[]
+
+  @@map("achievements")
+}
+
+model UserAchievement {
+  id            String      @id @default(uuid())
+  userId        String
+  user          User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  achievementId String
+  achievement   Achievement @relation(fields: [achievementId], references: [id])
+  unlockedAt    DateTime    @default(now())
+
+  @@unique([userId, achievementId])
+  @@map("user_achievements")
+}
+
+// ---------- STUDY PLANNER ----------
+
+model PlannerTask {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title     String
+  subject   String?
+  date      DateTime @db.Date
+  completed Boolean  @default(false)
+  aiGenerated Boolean @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([userId, date])
+  @@map("planner_tasks")
+}
+
+// ---------- AI DOUBT SOLVER ----------
+
+model AiDoubt {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  question  String
+  answer    String
+  subject   String?
+  createdAt DateTime @default(now())
+
+  @@map("ai_doubts")
+}
