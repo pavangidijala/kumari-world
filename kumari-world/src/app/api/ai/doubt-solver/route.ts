@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { prisma } from "@/lib/prisma";
 
-// Wire AI_API_KEY (Anthropic/OpenAI) in .env.local. This route:
+// Wire AI_API_KEY (Google Gemini) in .env.local. This route:
 // 1. Auths the user via Supabase
 // 2. Calls the AI provider with the question
 // 3. Saves the Q&A pair to prisma.aiDoubt for history
@@ -26,26 +26,26 @@ export async function POST(request: Request) {
 
   if (process.env.AI_API_KEY) {
     try {
-      const res = await fetch("https://api.anthropic.com/v1/messages", {
-        method: "POST",
-        headers: {
-          "content-type": "application/json",
-          "x-api-key": process.env.AI_API_KEY,
-          "anthropic-version": "2023-06-01",
-        },
-        body: JSON.stringify({
-          model: "claude-sonnet-4-6",
-          max_tokens: 500,
-          messages: [
-            {
-              role: "user",
-              content: `You are a banking exam tutor. Explain this question step by step, concisely: ${question}`,
-            },
-          ],
-        }),
-      });
+      const res = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${process.env.AI_API_KEY}`,
+        {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({
+            contents: [
+              {
+                parts: [
+                  {
+                    text: `You are a banking exam tutor. Explain this question step by step, concisely: ${question}`,
+                  },
+                ],
+              },
+            ],
+          }),
+        }
+      );
       const data = await res.json();
-      answer = data?.content?.[0]?.text ?? answer;
+      answer = data?.candidates?.[0]?.content?.parts?.[0]?.text ?? answer;
     } catch {
       answer = "The AI service is temporarily unavailable. Please try again shortly.";
     }
