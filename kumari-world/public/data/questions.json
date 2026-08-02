@@ -1,0 +1,112 @@
+[
+  {
+    "id": 1,
+    "question": "If A is the brother of B and B is the sister of C, how is A related to C?",
+    "options": ["Brother", "Sister", "Cousin", "Uncle"],
+    "answer": 0,
+    "explanation": "A is brother of B, B is sister of C → A is brother of C.",
+    "subject": "Reasoning",
+    "topic": "Blood Relations",
+    "difficulty": "Easy",
+    "exam": "IBPS PO"
+  },
+  {
+    "id": 2,
+    "question": "Simplify: 45 ÷ 9 × 5",
+    "options": ["20", "25", "30", "15"],
+    "answer": 1,
+    "explanation": "45 ÷ 9 = 5, × 5 = 25.",
+    "subject": "Quantitative Aptitude",
+    "topic": "Simplification",
+    "difficulty": "Easy",
+    "exam": "SBI Clerk"
+  },
+  {
+    "id": 3,
+    "question": "Choose the correct spelling:",
+    "options": ["Accomodation", "Accommodation", "Acommodation", "Accommadation"],
+    "answer": 1,
+    "explanation": "Correct spelling is 'Accommodation'.",
+    "subject": "English",
+    "topic": "Vocabulary",
+    "difficulty": "Easy",
+    "exam": "IBPS Clerk"
+  },
+  {
+    "id": 4,
+    "question": "Who is the current Governor of RBI?",
+    "options": ["Shaktikanta Das", "Urjit Patel", "Raghuram Rajan", "D Subbarao"],
+    "answer": 0,
+    "explanation": "Shaktikanta Das is the present RBI Governor.",
+    "subject": "General Awareness",
+    "topic": "Banking Awareness",
+    "difficulty": "Medium",
+    "exam": "SBI PO"
+  },
+  {
+    "id": 5,
+    "question": "In a certain code, CAT = DBU. How is DOG coded?",
+    "options": ["EPH", "EPF", "DPH", "EQH"],
+    "answer": 0,
+    "explanation": "Each letter shifted +1 → D→E, O→P, G→H → EPH.",
+    "subject": "Reasoning",
+    "topic": "Coding-Decoding",
+    "difficulty": "Medium",
+    "exam": "IBPS RRB"
+  },
+  {
+    "id": 6,
+    "question": "The average of 10, 20, 30, 40, 50 is?",
+    "options": ["25", "30", "35", "40"],
+    "answer": 1,
+    "explanation": "Sum = 150, ÷ 5 = 30.",
+    "subject": "Quantitative Aptitude",
+    "topic": "Averages",
+    "difficulty": "Easy",
+    "exam": "IBPS Clerk"
+  },
+  {
+    "id": 7,
+    "question": "Fill in the blank: She is very good ___ mathematics.",
+    "options": ["in", "at", "on", "with"],
+    "answer": 1,
+    "explanation": "Correct usage: 'good at mathematics'.",
+    "subject": "English",
+    "topic": "Grammar",
+    "difficulty": "Easy",
+    "exam": "SBI Clerk"
+  },
+  {
+    "id": 8,
+    "question": "Which bank launched the 'YONO' app?",
+    "options": ["SBI", "ICICI", "HDFC", "Axis"],
+    "answer": 0,
+    "explanation": "YONO (You Only Need One) is SBI’s app.",
+    "subject": "General Awareness",
+    "topic": "Banking Awareness",
+    "difficulty": "Easy",
+    "exam": "SBI PO"
+  },
+  {
+    "id": 9,
+    "question": "If 3x = 12, find x.",
+    "options": ["2", "3", "4", "6"],
+    "answer": 2,
+    "explanation": "3x = 12 → x = 4.",
+    "subject": "Quantitative Aptitude",
+    "topic": "Algebra",
+    "difficulty": "Easy",
+    "exam": "IBPS PO"
+  },
+  {
+    "id": 10,
+    "question": "Which of the following is a public sector bank?",
+    "options": ["SBI", "HDFC", "ICICI", "Yes Bank"],
+    "answer": 0,
+    "explanation": "SBI is a public sector bank.",
+    "subject": "General Awareness",
+    "topic": "Banking Awareness",
+    "difficulty": "Easy",
+    "exam": "IBPS Clerk"
+  }
+]
