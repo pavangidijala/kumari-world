@@ -36,8 +36,9 @@ features, scheduled jobs) needs data and API keys before it's "done":
 2. **Wire dashboard/result numbers to Prisma.** Stat cards currently show placeholder numbers —
    marked with `// NOTE:` / `// In production:` comments showing exactly which Prisma query to run.
 3. **Add your API keys** in `.env.local` (copy from `.env.example`): Supabase URL/keys, Postgres
-   connection strings, `AI_API_KEY` for the doubt solver, `NEWS_API_KEY` for current affairs,
-   `CRON_SECRET` for the scheduled jobs.
+   connection strings, `NEWS_API_KEY` for current affairs, `CRON_SECRET` for the scheduled jobs.
+   The doubt solver uses Google Gemini through Netlify AI Gateway, which is injected automatically
+   and needs no key of its own.
 4. **Rank/percentile computation** needs a batch job comparing a user's `Result` against all other
    results for the same `Test` — not included, since it depends on your scoring rules.
 

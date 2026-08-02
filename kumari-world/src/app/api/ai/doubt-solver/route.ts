@@ -1,10 +1,11 @@
 import { NextResponse } from "next/server";
+import { GoogleGenAI } from "@google/genai";
 import { createClient } from "@/lib/supabase/server";
 import { prisma } from "@/lib/prisma";
 
-// Wire AI_API_KEY (Anthropic/OpenAI) in .env.local. This route:
+// Uses Google Gemini via Netlify AI Gateway. This route:
 // 1. Auths the user via Supabase
-// 2. Calls the AI provider with the question
+// 2. Calls Gemini with the question
 // 3. Saves the Q&A pair to prisma.aiDoubt for history
 export async function POST(request: Request) {
   const supabase = createClient();
@@ -22,30 +23,16 @@ export async function POST(request: Request) {
   }
 
   let answer =
-    "AI service is not configured yet. Add AI_API_KEY to your environment to enable live explanations.";
+    "AI service is not configured yet. Enable Netlify AI Gateway on this site to get live explanations.";
 
-  if (process.env.AI_API_KEY) {
+  if (process.env.GEMINI_API_KEY) {
     try {
-      const res = await fetch("https://api.anthropic.com/v1/messages", {
-        method: "POST",
-        headers: {
-          "content-type": "application/json",
-          "x-api-key": process.env.AI_API_KEY,
-          "anthropic-version": "2023-06-01",
-        },
-        body: JSON.stringify({
-          model: "claude-sonnet-4-6",
-          max_tokens: 500,
-          messages: [
-            {
-              role: "user",
-              content: `You are a banking exam tutor. Explain this question step by step, concisely: ${question}`,
-            },
-          ],
-        }),
+      const ai = new GoogleGenAI({});
+      const result = await ai.models.generateContent({
+        model: "gemini-2.5-flash",
+        contents: `You are a banking exam tutor. Explain this question step by step, concisely: ${question}`,
       });
-      const data = await res.json();
-      answer = data?.content?.[0]?.text ?? answer;
+      answer = result.text ?? answer;
     } catch {
       answer = "The AI service is temporarily unavailable. Please try again shortly.";
     }
