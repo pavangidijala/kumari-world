@@ -29,7 +29,7 @@ export default function AiDoubtSolverPage() {
     setLoading(true);
 
     try {
-      // Wire this to /api/ai/doubt-solver, which calls the Anthropic/OpenAI API server-side
+      // Wire this to /api/ai/doubt-solver, which calls Gemini server-side
       // and saves the Q&A to prisma.aiDoubt for history.
       const res = await fetch("/api/ai/doubt-solver", {
         method: "POST",
